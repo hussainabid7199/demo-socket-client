@@ -1,4 +1,7 @@
-import axios from "axios";
+import UserDto from "@/dtos/user-dto";
+import LoginDataModel from "@/models/LoginDataModel";
+import axios, { AxiosResponse } from "axios";
+import Response from "@/dtos/response";
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_SOCKET_URL,
@@ -6,21 +9,23 @@ const apiClient = axios.create({
   //   timeout: 120000,
 });
 
-const token_hc =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZ3VpZCI6ImVhYTAzNDhjLTEwMGItNDYxOC04ZDVjLWJjZjk5ODM5YjA1YiIsImVtYWlsIjoidXNlckBleGFtcGxlLmNvbSIsImZ1bGxOYW1lIjoiSm9obiBEZW8iLCJpYXQiOjE3NDQ4MDg0NDksImV4cCI6MTc2MDM2MDQ0OSwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDozMDAxIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAxIn0.pVgS0jwa14Why2GK2jsegyUeDkgtBgoAFpett6RoIck";
-
 apiClient.interceptors.request.use(
   (config) => {
     // retrieve user token from localStorage
-    const token = token_hc; // localStorage.get("token") ||
+    const token = localStorage.getItem("at") || "";
     // set authorization header with bearer
     config.headers.Authorization = `Bearer ${token}`;
-    config.headers.clientId =
-      "CQCCOWWIZBRMERSNEJAROLLSZLRKMGLIHRKTWVPAUZIAXSSYUMECFQSVYTLFIVCNAPSNOZIIUTUZFF";
+    config.headers.clientid = process.env.NEXT_PUBLIC_CLIENT_ID;
     return config;
   },
   (err) => Promise.reject(err)
 );
+
+export const login = async (model: LoginDataModel): Promise<AxiosResponse<Response<UserDto>>> => {
+  debugger
+  return await apiClient.post<Response<UserDto>>("/account/login", model);
+}
+
 
 export const getAllChat = async () => {
   return await apiClient.get("/chat/contact");
@@ -38,5 +43,7 @@ export const getAllUserMessages = async (userId: number) => {
   return await apiClient.get(`/message/${userId}`);
 };
 
-
+export const sendMessage = async (userId: number, message: string) => {
+  return await apiClient.post("/message/send", { userId: userId, message: message });
+};
 

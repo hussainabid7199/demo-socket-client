@@ -12,3 +12,10 @@ export interface MessageDto {
     isActive: boolean;
     isDeleted?: boolean;
   }
+
+  export interface MessageSendDto{
+    chatId: number,
+    senderId?: number,
+    receiverId: number,
+    payload: File | string
+  }
