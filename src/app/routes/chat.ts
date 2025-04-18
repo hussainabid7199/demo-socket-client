@@ -4,7 +4,7 @@ import axios, { AxiosResponse } from "axios";
 import Response from "@/dtos/response";
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_SOCKET_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   //   withCredentials: true,
   //   timeout: 120000,
 });

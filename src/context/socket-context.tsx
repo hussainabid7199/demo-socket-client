@@ -24,10 +24,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     if (typeof window === "undefined") return;
 
     const token = localStorage.getItem("at") || "";
+    const roomId = 1;
 
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL as string, {
+    const socket = io(process.env.NEXT_PUBLIC_API_BASE_URL as string, {
       transports: ["websocket"],
       auth: { token },
+      query: { roomId }
     });
 
     socketRef.current = socket;

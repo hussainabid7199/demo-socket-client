@@ -87,7 +87,6 @@ export default function AuthForm() {
                 localStorage.setItem("guid", session.user.guid);
                 localStorage.setItem("email", session.user.email);
                 localStorage.setItem('fullName', session.user.firstName + " " + session.user.lastName || '');
-                localStorage.setItem("demo", "demo");
             }
             router.push('/chat');
         }

@@ -21,6 +21,9 @@ import { MessageDto, MessageSendDto } from "@/dtos/message-dto";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { useSocket } from "@/context/socket-context";
+import Logout from "../logout";
+import { useSession } from "next-auth/react";
+
 
 
 // const token = localStorage.get("at") || "";
@@ -31,6 +34,7 @@ import { useSocket } from "@/context/socket-context";
 // });
 
 export default function Chat() {
+    const { data: session } = useSession();
     const [selectedUser, setSelectedUser] = useState<number>(0);
     const [chatList, setChatList] = useState<ChatUserListDto[]>([]);
     const [messages, setMessages] = useState<MessageDto[]>([]);
@@ -39,10 +43,7 @@ export default function Chat() {
     const [modalOpen, setModalOpen] = useState(false);
     const [userList, setUserList] = useState<UserBasicDto[]>([]);
     const [selectedModelUser, setSelectedModelUser] = useState<UserBasicDto>();
-    const { socket } = useSocket();
-
-
-
+    const { socket, isConnected } = useSocket();
 
     const messageEndRef = useRef<HTMLDivElement>(null);
 
@@ -163,6 +164,7 @@ export default function Chat() {
                     <Button variant="secondary" onClick={() => setModalOpen(true)}>
                         Search User
                     </Button>
+                    <Logout/>
                     <UserSearchModal
                         users={userList}
                         open={modalOpen}
@@ -180,8 +182,8 @@ export default function Chat() {
                             {[...messages, ...currentMessages].map((msg, index) => {
                                 const isCurrentUser =
                                     "currentUserId" in msg
-                                        ? msg.currentUserId === 1
-                                        : msg.senderId === 1;
+                                        ? msg.currentUserId === session?.user.id
+                                        : msg.senderId === selectedUser;
                                 const content: string | File =
                                     "message" in msg ? msg.message : msg.payload;
                                 const createdAt =
@@ -234,7 +236,7 @@ export default function Chat() {
                         placeholder="Type a message..."
                         className="flex-1 mr-2"
                     />
-                    <Button disabled={!selectedUser} onClick={onSubmit} size="icon">
+                    <Button disabled={!selectedUser && isConnected} onClick={onSubmit} size="icon">
                         <FontAwesomeIcon icon={faPaperPlane} />
                     </Button>
                 </div>
