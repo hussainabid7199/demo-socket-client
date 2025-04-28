@@ -12,7 +12,6 @@ import {
     getAllUserMessages,
     sendMessage,
 } from "@/app/routes/chat";
-import ChatUserListDto from "@/dtos/chat-dto";
 import React from "react";
 import { UserSearchModal } from "@/components/user-search";
 import { UserBasicDto } from "@/dtos/user-dto";
@@ -23,27 +22,33 @@ import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { useSocket } from "@/context/socket-context";
 import Logout from "../logout";
 import { useSession } from "next-auth/react";
+import { ContactDto } from "@/dtos/contact-dto";
+import { MessageDataModel } from "@/models/MessageDataModel";
 
-
-
-// const token = localStorage.get("at") || "";
-
-// const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL, {
-//   transports: ["websocket"],
-//   auth: { token },
-// });
 
 export default function Chat() {
     const { data: session } = useSession();
-    const [selectedUser, setSelectedUser] = useState<number>(0);
-    const [chatList, setChatList] = useState<ChatUserListDto[]>([]);
+    const [selectedUser, setSelectedUser] = useState<ContactDto>();
+    const [chatList, setChatList] = useState<ContactDto[]>([]);
     const [messages, setMessages] = useState<MessageDto[]>([]);
     const [currentMessages, setCurrentMessages] = useState<MessageSendDto[]>([]);
     const [messageText, setMessageText] = useState("");
     const [modalOpen, setModalOpen] = useState(false);
     const [userList, setUserList] = useState<UserBasicDto[]>([]);
     const [selectedModelUser, setSelectedModelUser] = useState<UserBasicDto>();
-    const { socket, isConnected } = useSocket();
+
+
+    const { socket, isConnected, joinRoom, leaveRoom, currentRoomId } = useSocket();
+
+    useEffect(() => {
+        console.log("currentRoomId", currentRoomId);
+        if (selectedUser?.roomId) {
+            joinRoom(selectedUser.roomId);
+        }
+        console.log("leaveRoom", leaveRoom);
+    }, [selectedUser?.roomId, joinRoom]);
+
+
 
     const messageEndRef = useRef<HTMLDivElement>(null);
 
@@ -65,11 +70,13 @@ export default function Chat() {
 
     useEffect(() => {
         const fetchMessages = async () => {
-            if (selectedUser > 0) {
+            if (selectedUser && selectedUser.chatId && selectedUser.roomId && selectedUser.userId) {
                 try {
-                    const response = await getAllUserMessages(selectedUser);
+                    const response = await getAllUserMessages(selectedUser.chatId, selectedUser.userId);
                     if (response?.data?.data && response.status) {
                         setMessages(response.data.data);
+                    }else{
+                        setMessages([]);
                     }
                 } catch (error) {
                     console.error('Error fetching messages:', error);
@@ -104,9 +111,15 @@ export default function Chat() {
     }, [selectedUser, selectedModelUser]);
 
     const onSubmit = async () => {
-        if (messageText && selectedUser > 0 && socket) {
-            socket.emit("to-server", { message: messageText });
-            const response = await sendMessage(selectedUser, messageText);
+        if (messageText && selectedUser && selectedUser.chatId > 0 && socket) {
+            // socket.emit("to-server", { message: messageText });
+            const message: MessageDataModel = {
+                chatId: selectedUser.chatId,
+                message: messageText,
+                messageType: "TEXT",
+                senderId: session?.user.id
+            }
+            const response = await sendMessage(message);
             if (response?.data?.data && response.status) {
                 toast.success("Message sent successfully");
                 setMessageText("");
@@ -146,14 +159,14 @@ export default function Chat() {
                 <ul className="space-y-2">
                     {chatList.map((user) => (
                         <li
-                            key={user.id}
-                            className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${selectedUser === user.id
+                            key={user.userId}
+                            className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${selectedUser === user.userId
                                 ? "bg-[#128C7E]"
                                 : "hover:bg-[#0B7366]"
                                 }`}
-                            onClick={() => setSelectedUser(user.id)}
+                            onClick={() => setSelectedUser(user)}
                         >
-                            {user.firstName + " " + user.lastName}
+                            {user.fullName}
                         </li>
                     ))}
                 </ul>
@@ -164,7 +177,7 @@ export default function Chat() {
                     <Button variant="secondary" onClick={() => setModalOpen(true)}>
                         Search User
                     </Button>
-                    <Logout/>
+                    <Logout />
                     <UserSearchModal
                         users={userList}
                         open={modalOpen}
@@ -183,7 +196,7 @@ export default function Chat() {
                                 const isCurrentUser =
                                     "currentUserId" in msg
                                         ? msg.currentUserId === session?.user.id
-                                        : msg.senderId === selectedUser;
+                                        : msg.senderId === selectedUser?.userId;
                                 const content: string | File =
                                     "message" in msg ? msg.message : msg.payload;
                                 const createdAt =

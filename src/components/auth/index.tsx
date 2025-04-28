@@ -84,6 +84,7 @@ export default function AuthForm() {
         if (session && status && status === 'authenticated' && session && session.user) {
             if (typeof window !== 'undefined') {
                 localStorage.setItem('at', session.user.token || '');
+                localStorage.setItem("id", session.user.id.toString());
                 localStorage.setItem("guid", session.user.guid);
                 localStorage.setItem("email", session.user.email);
                 localStorage.setItem('fullName', session.user.firstName + " " + session.user.lastName || '');
